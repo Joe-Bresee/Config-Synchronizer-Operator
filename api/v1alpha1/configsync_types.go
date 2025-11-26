@@ -23,30 +23,76 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// sourceSpec describes the source of configuration data for a ConfigSync.
+// Only one of the fields should be set.
 type sourceSpec struct {
-	Git          *GitSource `json:"git,omitempty"`
+	// Git references a Git repository and path to read the configuration from.
+	Git *GitSource `json:"git,omitempty"`
+	// ConfigMapRef points to a ConfigMap in the cluster to use as the source.
 	ConfigMapRef *ObjectRef `json:"configMapRef,omitempty"`
-	SecretRef    *ObjectRef `json:"secretRef,omitempty"`
+	// SecretRef points to a Secret in the cluster to use as the source.
+	SecretRef *ObjectRef `json:"secretRef,omitempty"`
 }
 
 type GitSource struct {
-	Path     string `json:"path,omitempty"`
-	Repo     string `json:"repo,omitempty"`
-	Revision string `json:"revision,omitempty"`
+	// Path is the repository-relative path to the file containing the configuration
+	// (for example `config/app.yaml`). This field is required when `git` is used.
+	// +kubebuilder:validation:Required
+	Path string `json:"path"`
+
+	// Repo is the HTTPS or SSH URL of the Git repository to clone (for example
+	// `https://github.com/myorg/configs.git`). This field is required when `git` is used.
+	// +kubebuilder:validation:Required
+	Repo string `json:"repo"`
+
+	// Revision is an optional Git revision (branch, tag, or commit SHA). If
+	// unspecified, the operator will default to the repository's default branch.
 	// +optional
+	Revision string `json:"revision,omitempty"`
+
+	// AuthMethod controls how the operator authenticates to the Git repository.
+	// Allowed values are `ssh`, `https`, or `none`.
+	// +optional
+	// +kubebuilder:validation:Enum=ssh;https;none
 	AuthMethod string `json:"authMethod,omitempty"`
+
+	// SSHKeySecretRef references a Secret that contains an SSH private key when
+	// `AuthMethod=ssh`. The Secret should contain the key under a standard key
+	// name (e.g., `id_rsa`).
 	// +optional
 	SSHKeySecretRef *ObjectRef `json:"sshKeySecretRef,omitempty"`
+
+	// UsernameSecretRef references a Secret that contains the username when
+	// `AuthMethod=https` and basic auth is used.
 	// +optional
 	UsernameSecretRef *ObjectRef `json:"usernameSecretRef,omitempty"`
+
+	// PasswordSecretRef references a Secret that contains the password when
+	// `AuthMethod=https` and basic auth is used.
 	// +optional
 	PasswordSecretRef *ObjectRef `json:"passwordSecretRef,omitempty"`
 }
 
 type TargetRef struct {
+	// Namespace is the namespace in which the target resource should be
+	// created or updated.
 	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-	Type      string `json:"type"`
+
+	// Name is the name of the target ConfigMap or Secret.
+	Name string `json:"name"`
+
+	// Type is the type of the Kubernetes resource to write. Valid values are
+	// `ConfigMap` or `Secret`.
+	// +kubebuilder:validation:Enum=ConfigMap;Secret
+	Type string `json:"type"`
+}
+
+type ObjectRef struct {
+	// Name is the name of the referenced object (ConfigMap or Secret).
+	Name string `json:"name"`
+
+	// Namespace is the namespace of the referenced object.
+	Namespace string `json:"namespace"`
 }
 
 // ConfigSyncSpec defines the desired state of ConfigSync
@@ -57,10 +103,21 @@ type ConfigSyncSpec struct {
 	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
 	// foo is an example field of ConfigSync. Edit configsync_types.go to remove/update
+	// Source defines where to fetch configuration data from. Only one source
+	// field may be set (git, configMapRef, or secretRef).
 	// +optional
-	Source          sourceSpec  `json:"source"`
-	Targets         []TargetRef `json:"targets"`
-	RefreshInterval string      `json:"refreshInterval,omitempty"`
+	Source sourceSpec `json:"source"`
+
+	// Targets is the list of target resources to apply the rendered
+	// configuration to. Each target contains `namespace`, `name`, and `type`.
+	// +kubebuilder:validation:MinItems=1
+	Targets []TargetRef `json:"targets"`
+
+	// RefreshInterval controls how frequently the operator should re-fetch
+	// the source and re-apply targets. It uses Kubernetes duration format
+	// (e.g. `10m`, `1h`). If omitted, the operator's default behavior applies.
+	// +kubebuilder:validation:Pattern=^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$
+	RefreshInterval string `json:"refreshInterval,omitempty"`
 }
 
 // ConfigSyncStatus defines the observed state of ConfigSync.
@@ -83,10 +140,25 @@ type ConfigSyncStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	LastSyncedTime *metav1.Time       `json:"lastSyncedTime,omitempty"`
-	sourceRevision string             `json:"sourceRevision,omitempty"`
-	appliedTargets int                `json:"appliedTargets,omitempty"`
-	Conditions     []metav1.Condition `json:"conditions,omitempty"`
+	// LastSyncedTime is the timestamp of the last successful sync operation.
+	// +optional
+	LastSyncedTime *metav1.Time `json:"lastSyncedTime,omitempty"`
+
+	// SourceRevision records the source revision (for example a Git SHA) that
+	// was applied during the last sync.
+	// +optional
+	SourceRevision string `json:"sourceRevision,omitempty"`
+
+	// AppliedTargets is the number of targets that were successfully
+	// created or updated during the last sync.
+	// +optional
+	AppliedTargets int `json:"appliedTargets,omitempty"`
+
+	// Conditions represent the current state of the ConfigSync resource.
+	// This follows the Kubernetes condition convention (type, status, reason,
+	// message, lastTransitionTime).
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -98,7 +170,7 @@ type ConfigSync struct {
 
 	// metadata is a standard object metadata
 	// +optional
-	metav1.ObjectMeta `json:"metadata,omitzero"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec defines the desired state of ConfigSync
 	// +required
