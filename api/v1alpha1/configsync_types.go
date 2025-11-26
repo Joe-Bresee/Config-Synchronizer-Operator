@@ -137,8 +137,6 @@ type ConfigSyncStatus struct {
 	// - "Degraded": the resource failed to reach or maintain its desired state
 	//
 	// The status of each condition is one of True, False, or Unknown.
-	// +listType=map
-	// +listMapKey=type
 	// +optional
 	// LastSyncedTime is the timestamp of the last successful sync operation.
 	// +optional
