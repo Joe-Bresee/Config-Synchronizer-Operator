@@ -23,6 +23,32 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type sourceSpec struct {
+	Git          *GitSource `json:"git,omitempty"`
+	ConfigMapRef *ObjectRef `json:"configMapRef,omitempty"`
+	SecretRef    *ObjectRef `json:"secretRef,omitempty"`
+}
+
+type GitSource struct {
+	Path     string `json:"path,omitempty"`
+	Repo     string `json:"repo,omitempty"`
+	Revision string `json:"revision,omitempty"`
+	// +optional
+	AuthMethod string `json:"authMethod,omitempty"`
+	// +optional
+	SSHKeySecretRef *ObjectRef `json:"sshKeySecretRef,omitempty"`
+	// +optional
+	UsernameSecretRef *ObjectRef `json:"usernameSecretRef,omitempty"`
+	// +optional
+	PasswordSecretRef *ObjectRef `json:"passwordSecretRef,omitempty"`
+}
+
+type TargetRef struct {
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+}
+
 // ConfigSyncSpec defines the desired state of ConfigSync
 type ConfigSyncSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -32,7 +58,9 @@ type ConfigSyncSpec struct {
 
 	// foo is an example field of ConfigSync. Edit configsync_types.go to remove/update
 	// +optional
-	Foo *string `json:"foo,omitempty"`
+	Source          sourceSpec  `json:"source"`
+	Targets         []TargetRef `json:"targets"`
+	RefreshInterval string      `json:"refreshInterval,omitempty"`
 }
 
 // ConfigSyncStatus defines the observed state of ConfigSync.
@@ -55,7 +83,10 @@ type ConfigSyncStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	LastSyncedTime *metav1.Time       `json:"lastSyncedTime,omitempty"`
+	sourceRevision string             `json:"sourceRevision,omitempty"`
+	appliedTargets int                `json:"appliedTargets,omitempty"`
+	Conditions     []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
