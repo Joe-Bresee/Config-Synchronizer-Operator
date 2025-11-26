@@ -1,3 +1,4 @@
+*This project is in progress*
 # Config-Synchronizer-Operator
 
 A Kubernetes operator that synchronizes configuration from a source (Git repository, ConfigMap, or Secret) into target resources on a cluster.
