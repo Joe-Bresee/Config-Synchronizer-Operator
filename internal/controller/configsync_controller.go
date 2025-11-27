@@ -27,9 +27,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	configsv1alpha1 "github.com/joe-bresee/config-synchronizer-operator/api/v1alpha1"
+	"github.com/joe-bresee/config-synchronizer-operator/internal/sources"
 )
-
-var revisionSHA = "unknown" // overridden at build time with -ldflags if desired
 
 // ConfigSyncReconciler reconciles a ConfigSync object
 type ConfigSyncReconciler struct {
@@ -81,13 +80,20 @@ func (r *ConfigSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if configSync.Spec.Source.Git != nil {
-		revision, err := CloneOrUpdate(
+		revisionSHA, err := sources.CloneOrUpdate(
+			ctx,
+			r.Client,
 			configSync.Spec.Source.Git.RepoURL,
 			configSync.Spec.Source.Git.Revision,
 			configSync.Spec.Source.Git.Branch,
 			configSync.Spec.Source.Git.AuthMethod,
 			configSync.Spec.Source.Git.AuthSecretRef,
 		)
+		if err != nil {
+			setCondition(&configSync.Status, "Degraded", metav1.ConditionTrue, "GitCloneFailed", err.Error())
+			_ = r.Status().Update(ctx, &configSync)
+			return ctrl.Result{}, err
+		}
 	}
 	if configSync.Spec.Source.ConfigMapRef != nil {
 		// Handle ConfigMap source logic here
