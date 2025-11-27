@@ -8,11 +8,15 @@ import (
 	"strings"
 
 	configsv1alpha1 "github.com/joe-bresee/config-synchronizer-operator/api/v1alpha1"
-	"go.yaml.in/yaml/v2"
+	"sigs.k8s.io/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+// DryRunEnabled controls whether ApplyTarget performs a server-side dry-run
+// before applying. Tests can set this to false to avoid fake-client dry-run issues.
+var DryRunEnabled = true
 
 func ApplyTarget(ctx context.Context, c client.Client, sourcePath string, target configsv1alpha1.TargetRef) error {
 	logger := log.FromContext(ctx)
@@ -44,8 +48,12 @@ func ApplyTarget(ctx context.Context, c client.Client, sourcePath string, target
 
 			// 3. Decode into Unstructured object
 			obj := &unstructured.Unstructured{}
-			if err := yaml.Unmarshal([]byte(doc), obj); err != nil {
-				return fmt.Errorf("failed to parse YAML in %s: %w", filePath, err)
+			jsonData, err := yaml.YAMLToJSON([]byte(doc))
+			if err != nil {
+				return fmt.Errorf("failed to convert YAML to JSON in %s: %w", filePath, err)
+			}
+			if err := obj.UnmarshalJSON(jsonData); err != nil {
+				return fmt.Errorf("failed to unmarshal object in %s: %w", filePath, err)
 			}
 
 			// 4. Override namespace if object is namespaced
@@ -57,9 +65,12 @@ func ApplyTarget(ctx context.Context, c client.Client, sourcePath string, target
 			applyOpts := []client.PatchOption{client.ForceOwnership, client.FieldOwner("configsync")}
 			dryRunOpts := append(applyOpts, client.DryRunAll)
 
-			if err := c.Patch(ctx, obj, client.Apply, dryRunOpts...); err != nil {
-				return fmt.Errorf("dry-run failed for %s from %s: %w",
-					obj.GetKind(), filePath, err)
+			if DryRunEnabled {
+				logger.Info("Performing dry-run apply")
+				if err := c.Patch(ctx, obj, client.Apply, dryRunOpts...); err != nil {
+					return fmt.Errorf("dry-run failed for %s from %s: %w",
+						obj.GetKind(), filePath, err)
+				}
 			}
 
 			// 6. Actual apply

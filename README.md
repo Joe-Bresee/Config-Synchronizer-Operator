@@ -13,6 +13,11 @@ This project allows me to:
 
 - Work with Git repositories and practice Go (which I've been learning in my other repo gophercises) (via [Gophercises](https://gophercises.com))  
 - Learn Kubernetes concepts like CRDs, controllers, reconcilers, and status conditions  
+ 
+MVP notes
+ - This operator currently applies raw manifests from the configured source directly to the cluster.
+ - Templating/rendering (Helm/Kustomize/text templates) is intentionally deferred for the MVP. See `todo.md` for planned templating work.
+ - Runtime validation: the operator performs a server-side dry-run before applying manifests to catch admission/validation errors. This behavior can be disabled for tests.
 - Understand reconciliation loops and GitOps workflows  
 - learn how to use kubeapi and strengthen my understanding of neceessary rbacs and kubernetes interactions
 - learn how to do go authentication via https and ssh
