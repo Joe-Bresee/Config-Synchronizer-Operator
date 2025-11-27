@@ -1,4 +1,4 @@
-package sources
+package gitsource
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func CloneOrUpdate(
 	c client.Client,
 	repoURL, revision, branch, authMethod string,
 	authSecretRef *configsv1alpha1.ObjectRef,
-) (string, error) {
+) (string, string, error) {
 
 	logger := log.FromContext(ctx)
 
@@ -39,13 +39,13 @@ func CloneOrUpdate(
 
 	// Ensure base dir exists
 	if err := os.MkdirAll(cachePath, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create cache path: %w", err)
+		return "", "", fmt.Errorf("failed to create cache path: %w", err)
 	}
 
 	// Build auth if needed
 	authMethodObj, err := buildAuth(ctx, c, authMethod, authSecretRef)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	// Determine clone vs open
@@ -72,7 +72,7 @@ func CloneOrUpdate(
 
 		repo, err = git.PlainClone(cachePath, false, cloneOpts)
 		if err != nil {
-			return "", fmt.Errorf("clone failed: %w", err)
+			return "", "", fmt.Errorf("clone failed: %w", err)
 		}
 
 	} else {
@@ -108,7 +108,7 @@ func CloneOrUpdate(
 
 	w, err := repo.Worktree()
 	if err != nil {
-		return "", fmt.Errorf("failed to get worktree: %w", err)
+		return "", "", fmt.Errorf("failed to get worktree: %w", err)
 	}
 
 	if revision != "" {
@@ -117,7 +117,7 @@ func CloneOrUpdate(
 			Hash: plumbing.NewHash(revision),
 		})
 		if err != nil {
-			return "", fmt.Errorf("checkout revision failed: %w", err)
+			return "", "", fmt.Errorf("checkout revision failed: %w", err)
 		}
 	} else if branch != "" {
 		logger.Info("checking out branch", "branch", branch)
@@ -125,13 +125,13 @@ func CloneOrUpdate(
 			Branch: plumbing.NewBranchReferenceName(branch),
 		})
 		if err != nil {
-			return "", fmt.Errorf("checkout branch failed: %w", err)
+			return "", "", fmt.Errorf("checkout branch failed: %w", err)
 		}
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		return "", fmt.Errorf("failed to read HEAD: %w", err)
+		return "", "", fmt.Errorf("failed to read HEAD: %w", err)
 	}
 
 	logger.Info("repository synced",
@@ -139,7 +139,7 @@ func CloneOrUpdate(
 		"commit", head.Hash().String(),
 	)
 
-	return head.Hash().String(), nil
+	return head.Hash().String(), cachePath, nil
 }
 
 func sanitizeRepoURL(url string) string {

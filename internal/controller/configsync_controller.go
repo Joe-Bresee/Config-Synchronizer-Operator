@@ -27,7 +27,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	configsv1alpha1 "github.com/joe-bresee/config-synchronizer-operator/api/v1alpha1"
-	sources "github.com/joe-bresee/config-synchronizer-operator/internal/sources/git"
+	cmsource "github.com/joe-bresee/config-synchronizer-operator/internal/sources/configmap"
+	gitsource "github.com/joe-bresee/config-synchronizer-operator/internal/sources/git"
+	secretsource "github.com/joe-bresee/config-synchronizer-operator/internal/sources/secret"
 )
 
 // ConfigSyncReconciler reconciles a ConfigSync object
@@ -80,9 +82,10 @@ func (r *ConfigSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	var revisionSHA string
+	var sourcePath string
 	if configSync.Spec.Source.Git != nil {
 		var err error
-		revisionSHA, err = sources.CloneOrUpdate(
+		revisionSHA, sourcePath, err = gitsource.CloneOrUpdate(
 			ctx,
 			r.Client,
 			configSync.Spec.Source.Git.RepoURL,
@@ -100,9 +103,31 @@ func (r *ConfigSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	if configSync.Spec.Source.ConfigMapRef != nil {
 		// Handle ConfigMap source logic here
+		var err error
+		revisionSHA, sourcePath, err = cmsource.FetchConfigMap(
+			ctx,
+			r.Client,
+			configSync.Spec.Source.ConfigMapRef,
+		)
+		if err != nil {
+			setCondition(&configSync.Status, "Degraded", metav1.ConditionTrue, "ConfigMapFetchFailed", err.Error())
+			_ = r.Status().Update(ctx, &configSync)
+			return ctrl.Result{}, err
+		}
 	}
 	if configSync.Spec.Source.SecretRef != nil {
 		// Handle Secret source logic here
+		var err error
+		revisionSHA, sourcePath, err = secretsource.FetchSecret(
+			ctx,
+			r.Client,
+			configSync.Spec.Source.SecretRef,
+		)
+		if err != nil {
+			setCondition(&configSync.Status, "Degraded", metav1.ConditionTrue, "SecretFetchFailed", err.Error())
+			_ = r.Status().Update(ctx, &configSync)
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Step 3: The “apply to cluster” logic will vary: for a Git source, you need to clone/read files, parse manifests, then Apply them (usually with client.Apply). For ConfigMap/Secret sources, just read them and apply.
@@ -114,6 +139,7 @@ func (r *ConfigSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	configSync.Status.LastSyncedTime = &metav1.Time{Time: metav1.Now().Time}
 	configSync.Status.AppliedTargets = len(configSync.Spec.Targets)
 	configSync.Status.SourceRevision = revisionSHA
+	configSync.Status.SourcePath = sourcePath
 
 	if err := r.Status().Update(ctx, &configSync); err != nil {
 		return ctrl.Result{}, err

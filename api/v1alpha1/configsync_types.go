@@ -146,6 +146,10 @@ type ConfigSyncStatus struct {
 	// +optional
 	AppliedTargets int `json:"appliedTargets,omitempty"`
 
+	// SourcePath records the path within the source repository that was applied during the last sync.
+	// +optional
+	SourcePath string `json:"sourcePath,omitempty"`
+
 	// Conditions represent the current state of the ConfigSync resource.
 	// This follows the Kubernetes condition convention (type, status, reason,
 	// message, lastTransitionTime).
