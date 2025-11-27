@@ -66,4 +66,12 @@ If you'd like, I can scaffold parts of this (CRD types, controller skeleton, or 
 <!-- idea: rollback support -->
 <!-- multi-branch / env support -->
 <!-- go back and fix kubebuilder validation for branch, revision and add branch to sync -->
-<!-- //right now assuming https. Will need to add functionality for ssh later. Will need to make/reade secret for auth -->
+<!-- //right now assuming https. Will need to add functionality for ssh later. Will need to make/reade secret for auth
+Add full logging + error types + conditions updates
+
+Generate unit tests for Git logic
+
+Add compare-SHA logic in your Reconcile loop
+
+Add server-side apply code for applying manifests -->
+KNOWN HOST SUPPORT

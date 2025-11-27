@@ -38,12 +38,17 @@ type GitSource struct {
 	// Repo is the HTTPS or SSH URL of the Git repository to clone (for example
 	// `https://github.com/myorg/configs.git`). This field is required when `git` is used.
 	// +kubebuilder:validation:Required
-	Repo string `json:"repo"`
+	RepoURL string `json:"repoURL"`
 
 	// Path is the repository-relative path to the file containing the configuration
 	// (for example `config/app.yaml`). This field is required when `git` is used.
 	// +kubebuilder:validation:Required
 	Path string `json:"path"`
+
+	// Branch is the Git branch to checkout. If unspecified, the operator will
+	// default to the repository's default branch.
+	// +optional
+	Branch string `json:"branch,omitempty"`
 
 	// Revision is an optional Git revision (branch, tag, or commit SHA). If
 	// unspecified, the operator will default to the repository's default branch.
@@ -52,25 +57,14 @@ type GitSource struct {
 
 	// AuthMethod controls how the operator authenticates to the Git repository.
 	// Allowed values are `ssh`, `https`, or `none`.
-	// +optional
 	// +kubebuilder:validation:Enum=ssh;https;none
 	AuthMethod string `json:"authMethod,omitempty"`
 
-	// SSHKeySecretRef references a Secret that contains an SSH private key when
-	// `AuthMethod=ssh`. The Secret should contain the key under a standard key
-	// name (e.g., `id_rsa`).
+	// AuthSecretRef references a Secret that contains an SSH private key or basic auth credentials when
+	// `AuthMethod=ssh` or `AuthMethod=https`. The Secret should contain the key under a standard key
+	// name (e.g., `id_rsa` for SSH or `username` and `password` for HTTPS).
 	// +optional
-	SSHKeySecretRef *ObjectRef `json:"sshKeySecretRef,omitempty"`
-
-	// UsernameSecretRef references a Secret that contains the username when
-	// `AuthMethod=https` and basic auth is used.
-	// +optional
-	UsernameSecretRef *ObjectRef `json:"usernameSecretRef,omitempty"`
-
-	// PasswordSecretRef references a Secret that contains the password when
-	// `AuthMethod=https` and basic auth is used.
-	// +optional
-	PasswordSecretRef *ObjectRef `json:"passwordSecretRef,omitempty"`
+	AuthSecretRef *ObjectRef `json:"authSecretRef,omitempty"`
 }
 
 type TargetRef struct {

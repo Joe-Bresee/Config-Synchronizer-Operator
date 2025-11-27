@@ -80,10 +80,11 @@ func (r *ConfigSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if configSync.Spec.Source.Git != nil {
 		revision, err := CloneOrUpdate(
-			configSync.Spec.Source.Git.RepositoryURL,
+			configSync.Spec.Source.Git.RepoURL,
 			configSync.Spec.Source.Git.Revision,
 			configSync.Spec.Source.Git.Branch,
-			configSync.Spec.Source.Git.Auth, //right now assuming https. Will need to add functionality for ssh later. Will need to make/reade secret for auth
+			configSync.Spec.Source.Git.AuthMethod,
+			configSync.Spec.Source.Git.AuthSecretRef,
 		)
 	}
 	if configSync.Spec.Source.ConfigMapRef != nil {
