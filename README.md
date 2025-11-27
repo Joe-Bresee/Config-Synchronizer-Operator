@@ -14,6 +14,9 @@ This project allows me to:
 - Work with Git repositories and practice Go (which I've been learning in my other repo gophercises) (via [Gophercises](https://gophercises.com))  
 - Learn Kubernetes concepts like CRDs, controllers, reconcilers, and status conditions  
 - Understand reconciliation loops and GitOps workflows  
+- learn how to use kubeapi and strengthen my understanding of neceessary rbacs and kubernetes interactions
+- learn how to do go authentication via https and ssh
+- going to learn how to support ca cert checking
 
 ## Features
 
