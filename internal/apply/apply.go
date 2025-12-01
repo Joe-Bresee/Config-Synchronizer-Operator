@@ -64,6 +64,8 @@ func ApplyTarget(ctx context.Context, c client.Client, sourcePath string, target
 
 			applyOpts := []client.PatchOption{client.ForceOwnership, client.FieldOwner("configsync")}
 
+			logger.Info("dryrun status", "enabled", DryRunEnabled)
+
 			if DryRunEnabled {
 				logger.Info("Performing dry-run apply")
 				if err := c.Patch(ctx, obj, client.Apply, append(applyOpts, client.DryRunAll)...); err != nil {

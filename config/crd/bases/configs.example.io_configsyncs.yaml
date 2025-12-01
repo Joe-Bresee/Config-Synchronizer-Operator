@@ -159,6 +159,7 @@ spec:
                       enum:
                       - ConfigMap
                       - Secret
+                      - Deployment
                       type: string
                   required:
                   - name
