@@ -17,5 +17,6 @@ spec:
       #   name: git-creds
   targets:
     - namespace: default
-      name: configsync-sample-target
-      type: ConfigMap
+      name: test-deploy
+      type: Deployment
+  refreshInterval: "1m0s"

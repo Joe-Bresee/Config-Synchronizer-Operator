@@ -77,7 +77,7 @@ type TargetRef struct {
 
 	// Type is the type of the Kubernetes resource to write. Valid values are
 	// `ConfigMap` or `Secret`.
-	// +kubebuilder:validation:Enum=ConfigMap;Secret
+	// +kubebuilder:validation:Enum=ConfigMap;Secret;Deployment
 	Type string `json:"type"`
 }
 
