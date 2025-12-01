@@ -8,6 +8,7 @@ metadata:
 spec:
   source:
     git:
+      path: "."
       repoURL: https://github.com/Joe-Bresee/Config-Synchronizer-Operator-test-git-source.git
       branch: main
       # authMethod: https
@@ -16,3 +17,5 @@ spec:
       #   name: git-creds
   targets:
     - namespace: default
+      name: configsync-sample-target
+      type: ConfigMap

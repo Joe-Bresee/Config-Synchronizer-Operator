@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	configsv1alpha1 "github.com/joe-bresee/config-synchronizer-operator/api/v1alpha1"
-	"sigs.k8s.io/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/yaml"
 )
 
 // DryRunEnabled controls whether ApplyTarget performs a server-side dry-run
@@ -61,6 +61,9 @@ func ApplyTarget(ctx context.Context, c client.Client, sourcePath string, target
 				obj.SetNamespace(target.Namespace)
 			}
 
+			// 4.5 Clean metadata and status fields that must not be present for server-side apply/dry-run.
+			cleanObjectForApply(obj)
+
 			// 5. Dry-run validation: perform a server-side dry-run apply first to catch admission/validation errors
 			applyOpts := []client.PatchOption{client.ForceOwnership, client.FieldOwner("configsync")}
 			dryRunOpts := append(applyOpts, client.DryRunAll)
@@ -89,6 +92,66 @@ func ApplyTarget(ctx context.Context, c client.Client, sourcePath string, target
 	}
 
 	return nil
+}
+
+// cleanObjectForApply removes fields that should not be sent to the API server
+// when performing server-side apply or dry-run. In particular, some objects
+// committed to repositories may include `metadata.managedFields` or other
+// server-populated metadata which causes the API server to reject requests
+// (e.g. "metadata.managedFields must be nil"). This function removes those
+// fields in-place on the given Unstructured object.
+func cleanObjectForApply(obj *unstructured.Unstructured) {
+	if obj == nil {
+		return
+	}
+	content := obj.UnstructuredContent()
+
+	// Remove top-level status if present
+	delete(content, "status")
+
+	// Clean metadata map
+	// remove known server-populated metadata fields and recursively strip any
+	// nested managedFields that might appear in unexpected places.
+	removeManagedFieldsRecursive(content)
+
+	// write back content to object
+	obj.SetUnstructuredContent(content)
+}
+
+// removeManagedFieldsRecursive walks an object represented as arbitrary
+// interface{} (maps and slices) and removes keys named "managedFields",
+// and also removes common server-populated metadata fields under any
+// "metadata" map. This is defensive: some manifests may accidentally
+// contain full kubectl output with managedFields embedded.
+func removeManagedFieldsRecursive(v interface{}) {
+	switch t := v.(type) {
+	case map[string]interface{}:
+		// If this map has metadata, clean known fields there.
+		if metaI, ok := t["metadata"]; ok {
+			if meta, ok := metaI.(map[string]interface{}); ok {
+				delete(meta, "managedFields")
+				delete(meta, "resourceVersion")
+				delete(meta, "uid")
+				delete(meta, "creationTimestamp")
+				delete(meta, "generation")
+				delete(meta, "selfLink")
+				t["metadata"] = meta
+			}
+		}
+		// Remove managedFields at this level if present
+		delete(t, "managedFields")
+
+		// Recurse into all values
+		for _, vv := range t {
+			removeManagedFieldsRecursive(vv)
+		}
+	case []interface{}:
+		for _, e := range t {
+			removeManagedFieldsRecursive(e)
+		}
+	default:
+		// primitives: nothing to do
+	}
 }
 
 // No rendering (not Helm)
