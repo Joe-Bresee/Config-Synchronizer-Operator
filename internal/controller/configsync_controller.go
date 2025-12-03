@@ -67,11 +67,18 @@ func (r *ConfigSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// --------------------------------------------------------------
 	// Step 1: Fetch source and determine revision
 	// --------------------------------------------------------------
-	revisionSHA, sourcePath, err := source.FetchSource(&configSync, ctx, r.Client)
+	revisionSHA, sourcePath, commitMsg, err := source.FetchSource(&configSync, ctx, r.Client)
 	if err != nil {
 		setCondition(&configSync.Status, "Degraded", metav1.ConditionTrue, "SourceFetchFailed", err.Error())
 		_ = r.Status().Update(ctx, &configSync)
 		return ctrl.Result{}, err
+	}
+
+	// Log the fetched commit message (if any)
+	if commitMsg != "" {
+		log.Info("fetched source commit", "commit", revisionSHA, "message", commitMsg)
+	} else {
+		log.Info("fetched source", "commit", revisionSHA)
 	}
 
 	// Cleanup temp directories if not Git

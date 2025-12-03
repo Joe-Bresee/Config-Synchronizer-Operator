@@ -49,25 +49,9 @@ spec:
               source:
                 description: |-
                   foo is an example field of ConfigSync. Edit configsync_types.go to remove/update
-                  Source defines where to fetch configuration data from. Only one source
-                  field may be set (git, configMapRef, or secretRef).
+                  Source defines where to fetch configuration data from. Only the `git` field
+                  is supported as the source in this operator.
                 properties:
-                  configMapRef:
-                    description: 'ConfigMapRef points to a ConfigMap in the cluster
-                      to use as the source. Must be in form key: filename, data: file
-                      contents. Use data fields and NOT binaryData.'
-                    properties:
-                      name:
-                        description: Name is the name of the referenced object (ConfigMap
-                          or Secret).
-                        type: string
-                      namespace:
-                        description: Namespace is the namespace of the referenced
-                          object.
-                        type: string
-                    required:
-                    - name
-                    type: object
                   git:
                     description: Git references a Git repository and path to read
                       the configuration from.
@@ -121,21 +105,6 @@ spec:
                     required:
                     - path
                     - repoURL
-                    type: object
-                  secretRef:
-                    description: SecretRef points to a Secret in the cluster to use
-                      as the source.
-                    properties:
-                      name:
-                        description: Name is the name of the referenced object (ConfigMap
-                          or Secret).
-                        type: string
-                      namespace:
-                        description: Namespace is the namespace of the referenced
-                          object.
-                        type: string
-                    required:
-                    - name
                     type: object
                 type: object
               targets:

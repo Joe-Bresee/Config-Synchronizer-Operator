@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -173,16 +173,6 @@ func (in *SourceSpec) DeepCopyInto(out *SourceSpec) {
 		in, out := &in.Git, &out.Git
 		*out = new(GitSource)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.ConfigMapRef != nil {
-		in, out := &in.ConfigMapRef, &out.ConfigMapRef
-		*out = new(ObjectRef)
-		**out = **in
-	}
-	if in.SecretRef != nil {
-		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(ObjectRef)
-		**out = **in
 	}
 }
 

@@ -27,7 +27,7 @@ func cloneOrUpdate(
 	c client.Client,
 	repoURL, revision, branch, authMethod string,
 	authSecretRef *configsv1alpha1.ObjectRef,
-) (string, string, error) {
+) (string, string, string, error) {
 
 	logger := log.FromContext(ctx)
 
@@ -39,13 +39,13 @@ func cloneOrUpdate(
 
 	// Ensure base dir exists
 	if err := os.MkdirAll(cachePath, 0o755); err != nil {
-		return "", "", fmt.Errorf("failed to create cache path: %w", err)
+		return "", "", "", fmt.Errorf("failed to create cache path: %w", err)
 	}
 
 	// Build auth if needed
 	authMethodObj, err := buildAuth(ctx, c, authMethod, authSecretRef)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	// Determine clone vs open
@@ -72,7 +72,7 @@ func cloneOrUpdate(
 
 		repo, err = git.PlainClone(cachePath, false, cloneOpts)
 		if err != nil {
-			return "", "", fmt.Errorf("clone failed: %w", err)
+			return "", "", "", fmt.Errorf("clone failed: %w", err)
 		}
 
 	} else {
@@ -108,7 +108,7 @@ func cloneOrUpdate(
 
 	w, err := repo.Worktree()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get worktree: %w", err)
+		return "", "", "", fmt.Errorf("failed to get worktree: %w", err)
 	}
 
 	if revision != "" {
@@ -117,7 +117,7 @@ func cloneOrUpdate(
 			Hash: plumbing.NewHash(revision),
 		})
 		if err != nil {
-			return "", "", fmt.Errorf("checkout revision failed: %w", err)
+			return "", "", "", fmt.Errorf("checkout revision failed: %w", err)
 		}
 	} else if branch != "" {
 		logger.Info("checking out branch", "branch", branch)
@@ -125,21 +125,27 @@ func cloneOrUpdate(
 			Branch: plumbing.NewBranchReferenceName(branch),
 		})
 		if err != nil {
-			return "", "", fmt.Errorf("checkout branch failed: %w", err)
+			return "", "", "", fmt.Errorf("checkout branch failed: %w", err)
 		}
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read HEAD: %w", err)
+		return "", "", "", fmt.Errorf("failed to read HEAD: %w", err)
+	}
+
+	commit, err := repo.CommitObject(head.Hash())
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to read commit object: %w", err)
 	}
 
 	logger.Info("repository synced",
 		"repo", repoURL,
 		"commit", head.Hash().String(),
+		"message", commit.Message,
 	)
 
-	return head.Hash().String(), cachePath, nil
+	return head.Hash().String(), cachePath, commit.Message, nil
 }
 
 func sanitizeRepoURL(url string) string {

@@ -1,20 +1,14 @@
 📘 README — Config Synchronizer Operator
 Overview
 
-Config Synchronizer Operator is a Kubernetes Operator that automatically synchronizes configuration data from one or more sources (e.g., Git, ConfigMaps, Secrets) into target Kubernetes resources across namespaces or clusters.
+Config Synchronizer Operator is a Kubernetes Operator that automatically synchronizes configuration data from a Git repository into target Kubernetes resources across namespaces or clusters.
 Its purpose is to provide lightweight, domain-specific configuration management without requiring a full GitOps stack.
 
-This operator watches ConfigSync custom resources (CRs), pulls configuration from a defined source, transforms it if needed, and applies it to target ConfigMaps or Secrets.
+This operator watches ConfigSync custom resources (CRs), pulls configuration from a Git repository, transforms it if needed, and applies it to target Kubernetes resources.
 
 ✨ Features
 
-Sync from multiple sources
-
-Git repositories (path + revision)
-
-Existing in-cluster ConfigMaps or Secrets
-
-(optional future) HTTP/S3 sources
+Sync from Git repositories (path + revision)
 
 Sync to multiple targets
 
@@ -107,11 +101,11 @@ spec:
 
 Required fields:
 
-source (one of: git, configMapRef, secretRef)
+- `source.git` (only Git sources are supported)
 
-targets list
+- targets list
 
-refreshInterval (optional)
+- refreshInterval (optional)
 
 5. Required Permissions (RBAC)
 
@@ -147,7 +141,7 @@ rules:
 🧠 Operator Responsibilities (Functional Requirements)
 1. Source Fetching
 
-Retrieve config from Git or in-cluster object.
+Retrieve config from a Git repository.
 
 Verify existence and readability.
 

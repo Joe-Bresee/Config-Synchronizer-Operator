@@ -1,0 +1,3 @@
+looks like it only syncs on startup
+
+testing out commit message logging

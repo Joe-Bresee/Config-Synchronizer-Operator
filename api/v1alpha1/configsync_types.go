@@ -28,10 +28,6 @@ import (
 type SourceSpec struct {
 	// Git references a Git repository and path to read the configuration from.
 	Git *GitSource `json:"git,omitempty"`
-	// ConfigMapRef points to a ConfigMap in the cluster to use as the source. Must be in form key: filename, data: file contents. Use data fields and NOT binaryData.
-	ConfigMapRef *ObjectRef `json:"configMapRef,omitempty"`
-	// SecretRef points to a Secret in the cluster to use as the source.
-	SecretRef *ObjectRef `json:"secretRef,omitempty"`
 }
 
 type GitSource struct {
@@ -97,8 +93,8 @@ type ConfigSyncSpec struct {
 	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
 	// foo is an example field of ConfigSync. Edit configsync_types.go to remove/update
-	// Source defines where to fetch configuration data from. Only one source
-	// field may be set (git, configMapRef, or secretRef).
+	// Source defines where to fetch configuration data from. Only the `git` field
+	// is supported as the source in this operator.
 	// +optional
 	Source SourceSpec `json:"source"`
 

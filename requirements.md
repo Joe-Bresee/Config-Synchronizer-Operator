@@ -3,7 +3,7 @@
 ## Project Summary
 Build a Kubernetes operator that:
 - Watches a `ConfigSync` Custom Resource (CR)
-- Fetches configuration from a source (Git repo, ConfigMap, or Secret)
+- Fetches configuration from a source (Git repo)
 - Optionally applies templating or transformations
 - Synchronizes it into one or more target ConfigMaps or Secrets across namespaces
 - Updates `.status` with sync results
@@ -13,22 +13,16 @@ Build a Kubernetes operator that:
 ## CRD: ConfigSync
 
 ### spec
-- `source` (one of)
+- `source`
   - `git`:
     - `repo` (string) — HTTPS/SSH URL
     - `path` (string) — path to file in repo
     - `revision` (string, optional, default `main`)
-  - `configMapRef`: FIRST TODO
-    - `name`
-    - `namespace`
-  - `secretRef`:
-    - `name`
-    - `namespace`
-- `targets` (list)
-  - `namespace`
-  - `type` (enum: `ConfigMap` or `Secret`)
-  - `name`
-  - `key` (optional, for Secret)
+-- `targets` (list)
+- `namespace`
+- `type` (enum: `ConfigMap` or `Secret`)
+- `name`
+- `key` (optional, for Secret)
 - `refreshInterval` (string, optional)
 
 ### status
@@ -44,7 +38,6 @@ Build a Kubernetes operator that:
 ### Source Fetching
 - TODO: `fetch_source(configsync: ConfigSync) -> dict`
 - If Git: clone or pull, read file at `spec.source.git.path`
-- If ConfigMap/Secret: read data from cluster
 - Return dictionary of configuration
 
 ### Validation
