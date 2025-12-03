@@ -121,9 +121,19 @@ func cloneOrUpdate(
 		}
 	} else if branch != "" {
 		logger.Info("checking out branch", "branch", branch)
-		err = w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.NewBranchReferenceName(branch),
-		})
+		// Prefer checking out the remote origin/<branch> reference (updated by Fetch),
+		// falling back to local branch checkout if the remote ref is not present.
+		remoteRef, refErr := repo.Reference(plumbing.NewRemoteReferenceName("origin", branch), true)
+		if refErr == nil {
+			err = w.Checkout(&git.CheckoutOptions{
+				Hash:  remoteRef.Hash(),
+				Force: true,
+			})
+		} else {
+			err = w.Checkout(&git.CheckoutOptions{
+				Branch: plumbing.NewBranchReferenceName(branch),
+			})
+		}
 		if err != nil {
 			return "", "", "", fmt.Errorf("checkout branch failed: %w", err)
 		}
