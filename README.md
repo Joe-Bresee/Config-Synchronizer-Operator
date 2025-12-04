@@ -46,6 +46,4 @@ MVP notes
  - Build & tooling: `Makefile`, `go` toolchain, `kustomize` for manifests
  - Local testing: `kind` for local Kubernetes clusters, Docker for images
 
- readme in progress. i updated reamde. wdu thnk (See <attachments> above for file contents. You may not need to search or read the file again.)
-
 readme in progress.
