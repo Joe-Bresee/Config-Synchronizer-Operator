@@ -3,7 +3,8 @@
 
 A Kubernetes operator that synchronizes configuration from a Git source into target resources on a cluster.
 
-I have a functional reconciliation that syncs every refresh_interval correctly and applies the made changes, and gracefully logs errors on bad-syntaxed synced manifests.
+[![Watch a quick demo](https://youtu.be/75jLiJl56Ro/maxresdefault.jpg)](https://youtu.be/75jLiJl56Ro)
+
 
 ## Motivation
 
